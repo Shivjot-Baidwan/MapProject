@@ -1,0 +1,136 @@
+package com.mobilecommerce.mapproject;
+
+import android.location.Geocoder;
+import android.location.Location;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.io.IOException;
+
+public class MapFragment extends SupportMapFragment implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.OnInfoWindowClickListener,
+        GoogleMap.OnMapLongClickListener,
+        GoogleMap.OnMapClickListener,
+        GoogleMap.OnMarkerClickListener {
+
+    private GoogleApiClient mGoogleApiClient;
+    private Location mCurrentLocation;
+
+    private final int[] MAP_TYPES = { GoogleMap.MAP_TYPE_SATELLITE,
+            GoogleMap.MAP_TYPE_NORMAL,
+            GoogleMap.MAP_TYPE_HYBRID,
+            GoogleMap.MAP_TYPE_TERRAIN};
+    private int curMapTypeIndex = 0;
+
+
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        Log.d("Connection Successful", "Connected");
+        mCurrentLocation = LocationServices
+                .FusedLocationApi
+                .getLastLocation( mGoogleApiClient );
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.d("Connection Failed", "ConnectionFailed");
+
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+
+    }
+    private void initListeners() {
+        getMap().setOnMarkerClickListener(this);
+        getMap().setOnMapLongClickListener(this);
+        getMap().setOnInfoWindowClickListener( this );
+        getMap().setOnMapClickListener(this);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        setHasOptionsMenu(true);
+        mGoogleApiClient = new GoogleApiClient.Builder( getActivity() )
+                .addConnectionCallbacks( this )
+                .addOnConnectionFailedListener( this )
+                .addApi( LocationServices.API )
+                .build();
+
+        initListeners();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.e("Connection", "Connection");
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if( mGoogleApiClient != null && mGoogleApiClient.isConnected() ) {
+            mGoogleApiClient.disconnect();
+        }
+
+    }
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        marker.showInfoWindow();
+        return true;
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+
+        MarkerOptions options = new MarkerOptions().position( latLng );
+        options.title( getAddressFromLatLng( latLng ) );
+
+        options.icon( BitmapDescriptorFactory.defaultMarker() );
+        getMap().addMarker( options );
+    }
+    private String getAddressFromLatLng( LatLng latLng ) {
+        Geocoder geocoder = new Geocoder( getActivity() );
+
+        String address = "";
+        try {
+            address = geocoder
+                    .getFromLocation( latLng.latitude, latLng.longitude, 1 )
+                    .get( 0 ).getAddressLine( 0 );
+        } catch (IOException e ) {
+            Log.d("IOException", "IOException");
+        }
+
+        return address;
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+
+    }
+
+}
+
+
+
